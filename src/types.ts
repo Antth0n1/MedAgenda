@@ -1,3 +1,11 @@
+export interface Patient {
+  id: string;
+  name: string;
+  cpf: string;
+  address: string;
+  birthDate: string;
+}
+
 export interface Doctor {
   id: string;
   name: string;

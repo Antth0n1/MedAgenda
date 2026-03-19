@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, User, Calendar, Clock, Stethoscope, Activity } from 'lucide-react';
-import { Appointment, Doctor, Exam } from '../types';
+import { Appointment, Doctor, Exam, Patient } from '../types';
 
 interface AppointmentModalProps {
   onClose: () => void;
@@ -9,9 +9,10 @@ interface AppointmentModalProps {
   initialData?: Appointment;
   doctors: Doctor[];
   exams: Exam[];
+  patients: Patient[];
 }
 
-export default function AppointmentModal({ onClose, onSave, initialData, doctors, exams }: AppointmentModalProps) {
+export default function AppointmentModal({ onClose, onSave, initialData, doctors, exams, patients }: AppointmentModalProps) {
   const initialDoctorIndex = initialData?.doctorName 
     ? doctors.findIndex(d => d.name === initialData.doctorName)
     : 0;
@@ -104,12 +105,18 @@ export default function AppointmentModal({ onClose, onSave, initialData, doctors
                 </div>
                 <input
                   type="text"
+                  list="patients-list"
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-teal-500 focus:bg-white transition-colors text-slate-900"
                   placeholder="Ex: Maria da Silva"
                   required
                 />
+                <datalist id="patients-list">
+                  {patients.map(p => (
+                    <option key={p.id} value={p.name} />
+                  ))}
+                </datalist>
               </div>
             </div>
 

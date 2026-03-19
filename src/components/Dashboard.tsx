@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Calendar, Clock, Stethoscope, LogOut, MoreVertical, UserPlus, Activity, Edit2, XCircle, ClipboardList } from 'lucide-react';
+import { Plus, Calendar, Clock, Stethoscope, LogOut, MoreVertical, UserPlus, Activity, Edit2, XCircle, ClipboardList, User } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Appointment, User, RegisteredUser, Doctor, Exam } from '../types';
+import { Appointment, User as AppUser, RegisteredUser, Doctor, Exam, Patient } from '../types';
 import AppointmentModal from './AppointmentModal';
 import UserModal from './UserModal';
 import DoctorModal from './DoctorModal';
 import ExamModal from './ExamModal';
 import PatientHistoryModal from './PatientHistoryModal';
+import PatientModal from './PatientModal';
 
 interface DashboardProps {
-  user: User;
+  user: AppUser;
   onLogout: () => void;
   onRegisterUser: (user: RegisteredUser) => void;
 }
@@ -62,14 +63,22 @@ const initialExams: Exam[] = [
   { id: '4', name: 'Ultrassonografia', specialty: 'Geral' },
 ];
 
+const initialPatients: Patient[] = [
+  { id: '1', name: 'Maria Silva', cpf: '111.111.111-11', address: 'Rua das Flores, 123', birthDate: '1980-05-15' },
+  { id: '2', name: 'João Santos', cpf: '222.222.222-22', address: 'Av. Brasil, 456', birthDate: '1992-10-20' },
+  { id: '3', name: 'Pedro Alves', cpf: '333.333.333-33', address: 'Rua do Sol, 789', birthDate: '1975-03-08' },
+];
+
 export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
   const [exams, setExams] = useState<Exam[]>(initialExams);
+  const [patients, setPatients] = useState<Patient[]>(initialPatients);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedPatientForHistory, setSelectedPatientForHistory] = useState<string>('');
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -150,6 +159,13 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
                 <ClipboardList size={20} />
               </button>
             )}
+            <button 
+              onClick={() => setIsPatientModalOpen(true)}
+              className="p-3 bg-teal-700/50 hover:bg-teal-700 rounded-full transition-colors"
+              title="Cadastrar Paciente"
+            >
+              <User size={20} />
+            </button>
             <button 
               onClick={() => setIsExamModalOpen(true)}
               className="p-3 bg-teal-700/50 hover:bg-teal-700 rounded-full transition-colors"
@@ -368,6 +384,7 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
           initialData={editingAppointment || undefined}
           doctors={doctors}
           exams={exams}
+          patients={patients}
           onClose={() => {
             setIsModalOpen(false);
             setEditingAppointment(null);
@@ -402,6 +419,16 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
           onSave={(newExam) => {
             setExams([...exams, { ...newExam, id: Math.random().toString(36).substr(2, 9) }]);
             setIsExamModalOpen(false);
+          }}
+        />
+      )}
+
+      {isPatientModalOpen && (
+        <PatientModal
+          onClose={() => setIsPatientModalOpen(false)}
+          onSave={(newPatient) => {
+            setPatients([...patients, { ...newPatient, id: Math.random().toString(36).substr(2, 9) }]);
+            setIsPatientModalOpen(false);
           }}
         />
       )}
