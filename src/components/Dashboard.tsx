@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Calendar, Clock, Stethoscope, LogOut, MoreVertical, UserPlus, Activity, Edit2, XCircle, ClipboardList, User } from 'lucide-react';
+import UsersListModal from './UsersListModal';
+import { Plus, Calendar, Clock, Stethoscope, LogOut, MoreVertical, UserPlus, Activity, Edit2, XCircle, ClipboardList, User, Search, Filter, Users } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Appointment, User as AppUser, RegisteredUser, Doctor, Exam, Patient } from '../types';
@@ -10,11 +11,15 @@ import DoctorModal from './DoctorModal';
 import ExamModal from './ExamModal';
 import PatientHistoryModal from './PatientHistoryModal';
 import PatientModal from './PatientModal';
+import ConfirmCancelModal from './ConfirmCancelModal';
+import AppointmentDetailsModal from './AppointmentDetailsModal';
 
 interface DashboardProps {
   user: AppUser;
+  registeredUsers: RegisteredUser[];
   onLogout: () => void;
   onRegisterUser: (user: RegisteredUser) => void;
+  onUpdateUser: (oldName: string, updated: RegisteredUser) => void;
 }
 
 const mockAppointments: Appointment[] = [
@@ -69,25 +74,60 @@ const initialPatients: Patient[] = [
   { id: '3', name: 'Pedro Alves', cpf: '333.333.333-33', address: 'Rua do Sol, 789', birthDate: '1975-03-08' },
 ];
 
-export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardProps) {
+export default function Dashboard({ user, registeredUsers, onLogout, onRegisterUser, onUpdateUser }: DashboardProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
   const [exams, setExams] = useState<Exam[]>(initialExams);
   const [patients, setPatients] = useState<Patient[]>(initialPatients);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUsersListModalOpen, setIsUsersListModalOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<RegisteredUser | null>(null);
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
+  const [appointmentDetails, setAppointmentDetails] = useState<Appointment | null>(null);
   const [selectedPatientForHistory, setSelectedPatientForHistory] = useState<string>('');
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'consulta' | 'exame'>('consulta');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilter, setSearchFilter] = useState<'all' | 'patient' | 'doctor' | 'specialty' | 'date' | 'time'>('all');
 
   const canViewHistory = ['Médico(a)', 'Recepcionista', 'Administrador'].includes(user.role);
 
-  const filteredAppointments = appointments.filter(apt => apt.type === activeTab);
+  const filteredAppointments = appointments.filter(apt => {
+    if (apt.type !== activeTab) return false;
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      
+      let matchDate = false;
+      try {
+        matchDate = apt.date.includes(term) || format(parseISO(apt.date), "dd/MM/yyyy").includes(term) || format(parseISO(apt.date), "dd MMM", { locale: ptBR }).toLowerCase().includes(term);
+      } catch (e) {
+        // ignore date parsing errors
+      }
+      
+      if (searchFilter === 'patient') return apt.patientName.toLowerCase().includes(term);
+      if (searchFilter === 'doctor') return (apt.doctorName || '').toLowerCase().includes(term) || (apt.examName || '').toLowerCase().includes(term);
+      if (searchFilter === 'specialty') return (apt.specialty || '').toLowerCase().includes(term);
+      if (searchFilter === 'date') return matchDate;
+      if (searchFilter === 'time') return apt.time.includes(term);
+
+      const matchName = apt.patientName.toLowerCase().includes(term);
+      const matchDoctor = apt.doctorName?.toLowerCase().includes(term);
+      const matchExam = apt.examName?.toLowerCase().includes(term);
+      const matchSpecialty = apt.specialty?.toLowerCase().includes(term);
+      const matchTime = apt.time.includes(term);
+
+      return matchName || matchDoctor || matchExam || matchSpecialty || matchDate || matchTime;
+    }
+
+    return true;
+  });
 
   const handleSaveAppointment = (formData: Omit<Appointment, 'id' | 'status'>) => {
     if (editingAppointment) {
@@ -142,8 +182,15 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
       {/* Header */}
       <header className="bg-teal-600 text-white pt-12 pb-6 px-6 rounded-b-[32px] shadow-sm">
         <div className="max-w-4xl mx-auto flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-semibold mb-1">Olá, {user.name}</h1>
+          <div 
+            className="cursor-pointer hover:bg-teal-700/50 p-2 -m-2 rounded-xl transition-colors"
+            onClick={() => {
+              setUserToEdit(registeredUsers.find(u => u.name === user.name) || null);
+              setIsUserModalOpen(true);
+            }}
+            title="Editar meu perfil"
+          >
+            <h1 className="text-3xl font-semibold mb-1">Olá, {user.name} <Edit2 size={16} className="inline-block opacity-50 ml-1 mb-1" /></h1>
             <p className="text-teal-100 opacity-90">{user.role}</p>
           </div>
           <div className="flex gap-3">
@@ -181,11 +228,11 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
               <Stethoscope size={20} />
             </button>
             <button 
-              onClick={() => setIsUserModalOpen(true)}
+              onClick={() => setIsUsersListModalOpen(true)}
               className="p-3 bg-teal-700/50 hover:bg-teal-700 rounded-full transition-colors"
-              title="Cadastrar Novo Usuário"
+              title="Gestão de Usuários"
             >
-              <UserPlus size={20} />
+              <Users size={20} />
             </button>
             <button 
               onClick={onLogout}
@@ -200,20 +247,54 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 mt-8">
-        {/* Tabs */}
-        <div className="flex p-1 bg-slate-200/50 rounded-2xl mb-6 max-w-xs">
-          <button
-            onClick={() => setActiveTab('consulta')}
-            className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${activeTab === 'consulta' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Consultas
-          </button>
-          <button
-            onClick={() => setActiveTab('exame')}
-            className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${activeTab === 'exame' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Exames
-          </button>
+        {/* Tabs & Search */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
+          <div className="flex p-1 bg-slate-200/50 rounded-2xl w-full sm:max-w-xs">
+            <button
+              onClick={() => setActiveTab('consulta')}
+              className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${activeTab === 'consulta' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Consultas
+            </button>
+            <button
+              onClick={() => setActiveTab('exame')}
+              className={`flex-1 py-2 text-sm font-medium rounded-xl transition-colors ${activeTab === 'exame' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Exames
+            </button>
+          </div>
+          
+          <div className="flex gap-2 w-full sm:max-w-md">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Filter size={18} />
+              </div>
+              <select
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value as any)}
+                className="pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors text-slate-600 shadow-sm text-sm appearance-none cursor-pointer"
+              >
+                <option value="all">Todos</option>
+                <option value="patient">Paciente</option>
+                <option value="doctor">Médico/Exame</option>
+                <option value="specialty">Especialidade</option>
+                <option value="date">Data</option>
+                <option value="time">Horário</option>
+              </select>
+            </div>
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Search size={18} />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar..."
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors text-slate-900 shadow-sm text-sm"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-between items-end mb-6">
@@ -232,6 +313,7 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
+              onClick={() => setAppointmentDetails(apt)}
               className={`bg-white p-5 rounded-[24px] shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center gap-4 hover:shadow-md transition-all cursor-pointer group ${apt.status === 'canceled' ? 'opacity-60 grayscale' : ''}`}
             >
               {/* Date & Time Badge */}
@@ -320,7 +402,8 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCancel(apt.id);
+                            setAppointmentToCancel(apt);
+                            setActiveMenuId(null);
                           }}
                           disabled={apt.status === 'canceled'}
                           className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -395,10 +478,35 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
 
       {isUserModalOpen && (
         <UserModal
-          onClose={() => setIsUserModalOpen(false)}
-          onSave={(newUser) => {
-            onRegisterUser(newUser);
+          initialData={userToEdit || undefined}
+          onClose={() => {
             setIsUserModalOpen(false);
+            setUserToEdit(null);
+          }}
+          onSave={(newUser, oldName) => {
+            if (oldName) {
+              onUpdateUser(oldName, newUser);
+            } else {
+              onRegisterUser(newUser);
+            }
+            setIsUserModalOpen(false);
+            setUserToEdit(null);
+          }}
+        />
+      )}
+
+      {isUsersListModalOpen && (
+        <UsersListModal
+          onClose={() => setIsUsersListModalOpen(false)}
+          users={registeredUsers}
+          currentUser={registeredUsers.find(u => u.name === user.name)!}
+          onEditUser={(u) => {
+            setUserToEdit(u);
+            setIsUserModalOpen(true);
+          }}
+          onNewUser={() => {
+            setUserToEdit(null);
+            setIsUserModalOpen(true);
           }}
         />
       )}
@@ -438,6 +546,29 @@ export default function Dashboard({ user, onLogout, onRegisterUser }: DashboardP
           onClose={() => setIsHistoryModalOpen(false)}
           appointments={appointments}
           initialPatientName={selectedPatientForHistory}
+        />
+      )}
+
+      {appointmentToCancel && (
+        <ConfirmCancelModal
+          patientName={appointmentToCancel.patientName}
+          onClose={() => setAppointmentToCancel(null)}
+          onConfirm={() => handleCancel(appointmentToCancel.id)}
+        />
+      )}
+
+      {appointmentDetails && (
+        <AppointmentDetailsModal
+          appointment={appointmentDetails}
+          onClose={() => setAppointmentDetails(null)}
+          onEdit={() => {
+            setAppointmentDetails(null);
+            handleEdit(appointmentDetails);
+          }}
+          onCancel={() => {
+            setAppointmentDetails(null);
+            setAppointmentToCancel(appointmentDetails);
+          }}
         />
       )}
     </div>

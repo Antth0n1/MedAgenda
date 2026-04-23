@@ -27,6 +27,7 @@ export default function AppointmentModal({ onClose, onSave, initialData, doctors
   const [examIndex, setExamIndex] = useState(initialExamIndex >= 0 ? initialExamIndex : 0);
   const [date, setDate] = useState(initialData?.date || '');
   const [time, setTime] = useState(initialData?.time || '');
+  const [observations, setObservations] = useState(initialData?.observations || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +45,7 @@ export default function AppointmentModal({ onClose, onSave, initialData, doctors
       }),
       date,
       time,
+      observations,
     });
   };
 
@@ -212,6 +214,19 @@ export default function AppointmentModal({ onClose, onSave, initialData, doctors
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5 ml-1">
+                Observações
+              </label>
+              <textarea
+                value={observations}
+                onChange={(e) => setObservations(e.target.value)}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors text-slate-900 resize-none"
+                placeholder="Detalhes adicionais..."
+                rows={3}
+              />
             </div>
           </form>
         </div>

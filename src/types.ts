@@ -28,6 +28,7 @@ export interface Appointment {
   date: string;
   time: string;
   status: 'scheduled' | 'completed' | 'canceled';
+  observations?: string;
 }
 
 export interface User {

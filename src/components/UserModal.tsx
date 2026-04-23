@@ -5,17 +5,18 @@ import { RegisteredUser } from '../types';
 
 interface UserModalProps {
   onClose: () => void;
-  onSave: (user: RegisteredUser) => void;
+  onSave: (user: RegisteredUser, oldName?: string) => void;
+  initialData?: RegisteredUser;
 }
 
-export default function UserModal({ onClose, onSave }: UserModalProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Recepcionista');
+export default function UserModal({ onClose, onSave, initialData }: UserModalProps) {
+  const [username, setUsername] = useState(initialData?.name || '');
+  const [password, setPassword] = useState(initialData?.password || '');
+  const [role, setRole] = useState(initialData?.role || 'Recepcionista');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ name: username, password, role });
+    onSave({ name: username, password, role }, initialData?.name);
   };
 
   return (
@@ -35,8 +36,10 @@ export default function UserModal({ onClose, onSave }: UserModalProps) {
         className="relative w-full max-w-md bg-white rounded-[32px] shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-          <h2 className="text-xl font-semibold text-slate-800">Novo Usuário</h2>
-          <button 
+          <h2 className="text-xl font-semibold text-slate-800">
+            {initialData ? 'Editar Usuário' : 'Novo Usuário'}
+          </h2>
+          <button  
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
           >
