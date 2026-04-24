@@ -5,16 +5,17 @@ import { Doctor } from '../types';
 
 interface DoctorModalProps {
   onClose: () => void;
-  onSave: (doctor: Omit<Doctor, 'id'>) => void;
+  onSave: (doctor: Omit<Doctor, 'id'>, id?: string) => void;
+  initialData?: Doctor;
 }
 
-export default function DoctorModal({ onClose, onSave }: DoctorModalProps) {
-  const [name, setName] = useState('');
-  const [specialty, setSpecialty] = useState('');
+export default function DoctorModal({ onClose, onSave, initialData }: DoctorModalProps) {
+  const [name, setName] = useState(initialData?.name || '');
+  const [specialty, setSpecialty] = useState(initialData?.specialty || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ name, specialty });
+    onSave({ name, specialty }, initialData?.id);
   };
 
   return (
@@ -34,7 +35,9 @@ export default function DoctorModal({ onClose, onSave }: DoctorModalProps) {
         className="relative w-full max-w-md bg-white rounded-[32px] shadow-xl overflow-hidden flex flex-col"
       >
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-          <h2 className="text-xl font-semibold text-slate-800">Cadastrar Médico</h2>
+          <h2 className="text-xl font-semibold text-slate-800">
+            {initialData ? 'Editar Médico' : 'Cadastrar Médico'}
+          </h2>
           <button 
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
@@ -98,7 +101,7 @@ export default function DoctorModal({ onClose, onSave }: DoctorModalProps) {
             form="doctor-form"
             className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-full transition-colors shadow-sm"
           >
-            Cadastrar
+            {initialData ? 'Salvar Alterações' : 'Cadastrar'}
           </button>
         </div>
       </motion.div>

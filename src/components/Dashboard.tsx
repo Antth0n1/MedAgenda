@@ -11,6 +11,9 @@ import DoctorModal from './DoctorModal';
 import ExamModal from './ExamModal';
 import PatientHistoryModal from './PatientHistoryModal';
 import PatientModal from './PatientModal';
+import PatientsListModal from './PatientsListModal';
+import DoctorsListModal from './DoctorsListModal';
+import ExamsListModal from './ExamsListModal';
 import ConfirmCancelModal from './ConfirmCancelModal';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
 
@@ -84,8 +87,14 @@ export default function Dashboard({ user, registeredUsers, onLogout, onRegisterU
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<RegisteredUser | null>(null);
   const [isDoctorModalOpen, setIsDoctorModalOpen] = useState(false);
+  const [isDoctorsListModalOpen, setIsDoctorsListModalOpen] = useState(false);
+  const [doctorToEdit, setDoctorToEdit] = useState<Doctor | null>(null);
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+  const [isExamsListModalOpen, setIsExamsListModalOpen] = useState(false);
+  const [examToEdit, setExamToEdit] = useState<Exam | null>(null);
+  const [isPatientsListModalOpen, setIsPatientsListModalOpen] = useState(false);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [appointmentDetails, setAppointmentDetails] = useState<Appointment | null>(null);
@@ -206,24 +215,26 @@ export default function Dashboard({ user, registeredUsers, onLogout, onRegisterU
                 <ClipboardList size={20} />
               </button>
             )}
+            {canViewHistory && (
+              <button 
+                onClick={() => setIsPatientsListModalOpen(true)}
+                className="p-3 bg-teal-700/50 hover:bg-teal-700 rounded-full transition-colors"
+                title="Gestão de Pacientes"
+              >
+                <User size={20} />
+              </button>
+            )}
             <button 
-              onClick={() => setIsPatientModalOpen(true)}
+              onClick={() => setIsExamsListModalOpen(true)}
               className="p-3 bg-teal-700/50 hover:bg-teal-700 rounded-full transition-colors"
-              title="Cadastrar Paciente"
-            >
-              <User size={20} />
-            </button>
-            <button 
-              onClick={() => setIsExamModalOpen(true)}
-              className="p-3 bg-teal-700/50 hover:bg-teal-700 rounded-full transition-colors"
-              title="Cadastrar Exame"
+              title="Gestão de Exames"
             >
               <Activity size={20} />
             </button>
             <button 
-              onClick={() => setIsDoctorModalOpen(true)}
+              onClick={() => setIsDoctorsListModalOpen(true)}
               className="p-3 bg-teal-700/50 hover:bg-teal-700 rounded-full transition-colors"
-              title="Cadastrar Médico"
+              title="Gestão de Médicos"
             >
               <Stethoscope size={20} />
             </button>
@@ -511,32 +522,114 @@ export default function Dashboard({ user, registeredUsers, onLogout, onRegisterU
         />
       )}
 
+      {isDoctorsListModalOpen && (
+        <DoctorsListModal
+          onClose={() => setIsDoctorsListModalOpen(false)}
+          doctors={doctors}
+          onEditDoctor={(d) => {
+            setDoctorToEdit(d);
+            setIsDoctorModalOpen(true);
+          }}
+          onDeleteDoctor={(id) => {
+            setDoctors(doctors.filter(d => d.id !== id));
+          }}
+          onNewDoctor={() => {
+            setDoctorToEdit(null);
+            setIsDoctorModalOpen(true);
+          }}
+        />
+      )}
+
       {isDoctorModalOpen && (
         <DoctorModal
-          onClose={() => setIsDoctorModalOpen(false)}
-          onSave={(newDoctor) => {
-            setDoctors([...doctors, { ...newDoctor, id: Math.random().toString(36).substr(2, 9) }]);
+          initialData={doctorToEdit || undefined}
+          onClose={() => {
             setIsDoctorModalOpen(false);
+            setDoctorToEdit(null);
+          }}
+          onSave={(newDoctor, id) => {
+            if (id) {
+              setDoctors(doctors.map(d => d.id === id ? { ...newDoctor, id } : d));
+            } else {
+              setDoctors([...doctors, { ...newDoctor, id: Math.random().toString(36).substr(2, 9) }]);
+            }
+            setIsDoctorModalOpen(false);
+            setDoctorToEdit(null);
+          }}
+        />
+      )}
+
+      {isExamsListModalOpen && (
+        <ExamsListModal
+          onClose={() => setIsExamsListModalOpen(false)}
+          exams={exams}
+          onEditExam={(e) => {
+            setExamToEdit(e);
+            setIsExamModalOpen(true);
+          }}
+          onDeleteExam={(id) => {
+            setExams(exams.filter(e => e.id !== id));
+          }}
+          onNewExam={() => {
+            setExamToEdit(null);
+            setIsExamModalOpen(true);
           }}
         />
       )}
 
       {isExamModalOpen && (
         <ExamModal
-          onClose={() => setIsExamModalOpen(false)}
-          onSave={(newExam) => {
-            setExams([...exams, { ...newExam, id: Math.random().toString(36).substr(2, 9) }]);
+          initialData={examToEdit || undefined}
+          onClose={() => {
             setIsExamModalOpen(false);
+            setExamToEdit(null);
+          }}
+          onSave={(newExam, id) => {
+            if (id) {
+              setExams(exams.map(e => e.id === id ? { ...newExam, id } : e));
+            } else {
+              setExams([...exams, { ...newExam, id: Math.random().toString(36).substr(2, 9) }]);
+            }
+            setIsExamModalOpen(false);
+            setExamToEdit(null);
+          }}
+        />
+      )}
+
+      {isPatientsListModalOpen && (
+        <PatientsListModal
+          onClose={() => setIsPatientsListModalOpen(false)}
+          patients={patients}
+          onEditPatient={(p) => {
+            setPatientToEdit(p);
+            setIsPatientModalOpen(true);
+          }}
+          onDeletePatient={(id) => {
+            setPatients(patients.filter(p => p.id !== id));
+            // Optional: Also update appointments or show warning
+          }}
+          onNewPatient={() => {
+            setPatientToEdit(null);
+            setIsPatientModalOpen(true);
           }}
         />
       )}
 
       {isPatientModalOpen && (
         <PatientModal
-          onClose={() => setIsPatientModalOpen(false)}
-          onSave={(newPatient) => {
-            setPatients([...patients, { ...newPatient, id: Math.random().toString(36).substr(2, 9) }]);
+          initialData={patientToEdit || undefined}
+          onClose={() => {
             setIsPatientModalOpen(false);
+            setPatientToEdit(null);
+          }}
+          onSave={(newPatient, id) => {
+            if (id) {
+              setPatients(patients.map(p => p.id === id ? { ...newPatient, id } : p));
+            } else {
+              setPatients([...patients, { ...newPatient, id: Math.random().toString(36).substr(2, 9) }]);
+            }
+            setIsPatientModalOpen(false);
+            setPatientToEdit(null);
           }}
         />
       )}

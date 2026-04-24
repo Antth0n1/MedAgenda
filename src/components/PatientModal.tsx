@@ -5,18 +5,19 @@ import { Patient } from '../types';
 
 interface PatientModalProps {
   onClose: () => void;
-  onSave: (patient: Omit<Patient, 'id'>) => void;
+  onSave: (patient: Omit<Patient, 'id'>, id?: string) => void;
+  initialData?: Patient;
 }
 
-export default function PatientModal({ onClose, onSave }: PatientModalProps) {
-  const [name, setName] = useState('');
-  const [cpf, setCpf] = useState('');
-  const [address, setAddress] = useState('');
-  const [birthDate, setBirthDate] = useState('');
+export default function PatientModal({ onClose, onSave, initialData }: PatientModalProps) {
+  const [name, setName] = useState(initialData?.name || '');
+  const [cpf, setCpf] = useState(initialData?.cpf || '');
+  const [address, setAddress] = useState(initialData?.address || '');
+  const [birthDate, setBirthDate] = useState(initialData?.birthDate || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ name, cpf, address, birthDate });
+    onSave({ name, cpf, address, birthDate }, initialData?.id);
   };
 
   return (
@@ -36,7 +37,9 @@ export default function PatientModal({ onClose, onSave }: PatientModalProps) {
         className="relative w-full max-w-lg bg-white rounded-[32px] shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-          <h2 className="text-xl font-semibold text-slate-800">Cadastrar Paciente</h2>
+          <h2 className="text-xl font-semibold text-slate-800">
+            {initialData ? 'Editar Paciente' : 'Cadastrar Paciente'}
+          </h2>
           <button 
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
@@ -137,7 +140,7 @@ export default function PatientModal({ onClose, onSave }: PatientModalProps) {
             form="patient-form"
             className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-full transition-colors shadow-sm"
           >
-            Cadastrar
+            {initialData ? 'Salvar Alterações' : 'Cadastrar'}
           </button>
         </div>
       </motion.div>
